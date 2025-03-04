@@ -1,0 +1,8 @@
+*.env*
+
+/tmp
+/tmp/*
+
+docker-compose.yml
+
+config/config.yml
