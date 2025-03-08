@@ -65,11 +65,11 @@ func (opn *OpenSearchCDC) ConsumeMessage(message kafka.Message) error {
 func StartKafka(cdcConsumer *OpenSearchCDC) {
 	broker := os.Getenv("KAFKA_BROKER")
 	topic := os.Getenv("KAFKA_TOPIC")
-	// groupID := os.Getenv("KAFKA_GROUP_ID")
+	groupID := string(os.Getenv("KAFKA_GROUP_ID"))
 
 	config := kafka.ReaderConfig{
 		Brokers:  []string{broker},
-		GroupID:  "g3",
+		GroupID:  groupID,
 		Topic:    topic,
 		MaxBytes: 10e6, // 10MB
 	}

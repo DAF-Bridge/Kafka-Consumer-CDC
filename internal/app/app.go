@@ -25,7 +25,10 @@ func Start() {
 	// Dependency injection
 	// Initialize the repository
 	opensearchRepo := repository.NewOpenSearchRepository(initializer.ESClient)
-	opensearchSrv := service.NewOpenSearchService(opensearchRepo)
+	jobRepo := repository.NewJobRepository(initializer.DB)
+	eventRepo := repository.NewEventRepository(initializer.DB)
+	orgRepo := repository.NewOrganizationRepository(initializer.DB)
+	opensearchSrv := service.NewOpenSearchService(opensearchRepo, jobRepo, eventRepo, orgRepo)
 	cdcConsumer := consumer.NewOpenSearchCDC(opensearchRepo, *opensearchSrv)
 
 	logs.Info("Starting the application")
