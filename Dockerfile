@@ -35,7 +35,8 @@ RUN go build -ldflags="-s -w" -v -o /usr/local/bin/app ./cmd/main.go
 FROM debian:bullseye-slim AS runner
 
 # Install runtime dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates netcat curl && \
+RUN apt-get update && apt-get install -y --no-install-recommends \ 
+    ca-certificates netcat curl iputils-ping dnsutils && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -51,7 +52,7 @@ COPY --from=builder /usr/local/bin/create_connector.sh /usr/local/bin/create_con
 # Set production environment
 ENV ENVIRONMENT=production
 
-EXPOSE 8080
+EXPOSE 8000
 
 # Command to run the executable
 ENTRYPOINT ["sh", "-c", "/usr/local/bin/create_connector.sh && /usr/local/bin/app"]

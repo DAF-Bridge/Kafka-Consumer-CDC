@@ -1,8 +1,10 @@
 package initializer
 
 import (
+	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/DAF-Bridge/cdc-service/pkg/logs"
@@ -24,17 +26,58 @@ func ConnectToMessageQueue() {
 	}
 
 	// Create a Kafka consumer
+	// consumer, err := kafka.NewConsumer(config)
+	// if err != nil {
+	// 	log.Fatalf("Failed to create Kafka consumer: %v", err)
+	// }
+	// defer consumer.Close()
+
+	// // Check metadata to verify broker connection
+	// _, err = consumer.GetMetadata(nil, true, int(5*time.Second.Milliseconds()))
+	// if err != nil {
+	// 	log.Fatalf("Failed to get Kafka metadata: %v", err)
+	// }
+	topicsStr := os.Getenv("KAFKA_TOPIC")
+	topics := strings.Split(topicsStr, ",")
+	// topics := os.Getenv("KAFKA_TOPIC")
+
+	// // Check Kafka metadata for the specified topic
+	// meta, err := consumer.GetMetadata(&topic, false, int(5*time.Second.Milliseconds()))
+	// if err != nil {
+	// 	log.Fatalf("Failed to get Kafka metadata for topic %s: %v", topic, err)
+	// }
+	// topicMeta, exists := meta.Topics[topic]
+	// if !exists || len(topicMeta.Partitions) == 0 {
+	// 	log.Fatalf("Topic %s exists but has no partitions", topic)
+	// }
+
+	// logs.Info(fmt.Sprintf("Successfully connected to Kafka topic: %s", topic))
+
+	// Create a Kafka consumer
 	consumer, err := kafka.NewConsumer(config)
 	if err != nil {
 		log.Fatalf("Failed to create Kafka consumer: %v", err)
 	}
 	defer consumer.Close()
 
-	// Check metadata to verify broker connection
-	_, err = consumer.GetMetadata(nil, true, int(5*time.Second.Milliseconds()))
+	// Check Kafka metadata to verify broker connection
+	meta, err := consumer.GetMetadata(nil, true, int(5*time.Second.Milliseconds()))
 	if err != nil {
 		log.Fatalf("Failed to get Kafka metadata: %v", err)
 	}
 
-	logs.Info("Successfully connected to Kafka as a consumer!")
+	// Check if all required topics exist
+	for _, topic := range topics {
+		topicMeta, exists := meta.Topics[topic]
+		if !exists {
+			log.Fatalf("Topic %s does not exist in Kafka", topic)
+		}
+		if len(topicMeta.Partitions) == 0 {
+			log.Fatalf("Topic %s exists but has no partitions", topic)
+		}
+
+		logs.Info(fmt.Sprintf("Successfully connected to Kafka topic: %s", topic))
+	}
+
+	logs.Info("Kafka connection check completed successfully.")
 }
