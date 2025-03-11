@@ -30,7 +30,7 @@ jobs:
       id: build_failed
 
     outputs:
-        outcome: ${{ steps.integration_test.outcome }}
+        outcome: ${{ steps.build.outcome }}
 
 
   notify:
