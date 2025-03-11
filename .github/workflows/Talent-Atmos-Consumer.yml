@@ -1,0 +1,67 @@
+# This workflow will build a golang project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: Go
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.22'
+
+    - name: Build
+      run: go build -v ./...
+
+    - name: Check build result
+      if: ${{ steps.build.outcome != 'success' }}
+      run: echo "Build stage failed."
+      id: build_failed
+
+    outputs:
+        outcome: ${{ steps.integration_test.outcome }}
+
+
+  notify:
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Discord notification
+        run: |
+          BUILD_STATUS="${{ needs.build.outputs.build_status }}"
+
+          if [ "$BUILD_STATUS" != "success" ]; then
+            STAGE="Build"
+            STATUS="failure"
+          else
+            STAGE="All"
+            STATUS="success"
+          fi
+
+          MESSAGE=$(cat <<EOF
+          {
+            "username": "GitHub Actions",
+            "embeds": [{
+              "title": "Workflow $STATUS - $STAGE Stage",
+              "description": "Workflow: **${{ github.workflow }}**\\nActor: ${{ github.actor }}\nGithub-Commit-Head: ${{ github.sha }}\nBranch: **${{ github.ref_name }}**\\nRepository: **${{ github.repository }}**\\nCommit-msg: ${{ github.event.head_commit.message }}\nStatus: $STATUS\n[View Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})",
+              "color": $(if [ "$STATUS" == "success" ]; then echo "3066993"; else echo "15158332"; fi)
+            }]
+          }
+          EOF
+          )
+
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -d "$MESSAGE" \
+            ${{ secrets.DISCORD_WEBHOOK_URL }}
