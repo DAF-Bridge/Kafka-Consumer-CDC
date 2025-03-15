@@ -24,7 +24,6 @@ jobs:
         id: build
         run: |
           go build -v -o app ./cmd/main.go || exit 1
-        continue-on-error: true
 
       - name: Check build result
         if: ${{ steps.build.outcome != 'success' }}
@@ -40,7 +39,7 @@ jobs:
     steps:
       - name: Send Discord notification
         run: |
-          BUILD_STATUS="${{ needs.build.outputs.build_status }}"
+          BUILD_STATUS="${{ needs.build.outputs.outcome }}"
 
           if [ "$BUILD_STATUS" != "success" ]; then
             STAGE="Build"
