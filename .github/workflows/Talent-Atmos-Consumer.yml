@@ -71,27 +71,17 @@ jobs:
       - name: Notify on Success
         if: ${{ steps.container_build_push.outcome == 'success' }}
         run: echo "Docker image successfully pushed to GitHub Container Registry"
-    
-    outputs:
-      outcome: ${{ steps.container_build_push.outcome }}
 
   notify:
-    needs: [build, container_build_push]
+    needs: [build]
     runs-on: ubuntu-latest
     steps:
       - name: Send Discord notification
         run: |
           BUILD_STATUS="${{ needs.build.outputs.outcome }}"
-          CONTAINER_STATUS="${{ needs.container_build_push.outputs.outcome }}"
 
-          if [ "$BUILD_STATUS" != "success" ] && [ "$CONTAINER_STATUS" != "success" ]; then
-            STAGE="All"
-            STATUS="failure"
-          elif [ "$BUILD_STATUS" != "success" ]; then
+          if [ "$BUILD_STATUS" != "success" ]; then
             STAGE="Build"
-            STATUS="failure"
-          elif [ "$CONTAINER_STATUS" != "success" ]; then
-            STAGE="Container Build"
             STATUS="failure"
           else
             STAGE="All"
