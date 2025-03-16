@@ -205,7 +205,6 @@ func (s *OpenSearchService) convertToJobDocument(event models.CDCEvent) (*models
 		Title:         event.Payload.After["title"].(string),
 		Prerequisites: prerequisites,
 		Description:   event.Payload.After["description"].(string),
-		Location:      event.Payload.After["location"].(string),
 		Workplace:     event.Payload.After["workplace"].(string),
 		WorkType:      event.Payload.After["work_type"].(string),
 		CareerStage:   event.Payload.After["career_stage"].(string),
