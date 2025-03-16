@@ -32,6 +32,9 @@ func (s *OpenSearchService) ProcessEvent(event models.CDCEvent) error {
 	var document interface{}
 	var err error
 
+	// -------------------------------
+	// Convert the event from kafka to a
+	// -------------------------------
 	switch event.Payload.Op {
 	case "d":
 		// Delete the document
@@ -56,18 +59,39 @@ func (s *OpenSearchService) ProcessEvent(event models.CDCEvent) error {
 		switch event.Payload.Source.Table {
 		case "events":
 			logs.Info("Processing event")
+			if isSoftDelete(event.Payload.After) {
+				document = &models.EventDocument{
+					ID: uint(event.Payload.After["id"].(float64)),
+				}
+
+				break
+			}
 			document, err = s.convertToEventDocument(event)
 			if err != nil {
 				logs.Error(fmt.Sprintf("Error converting event to document: %v", err))
 			}
 		case "org_open_jobs":
 			logs.Info("Processing jobs")
+			if isSoftDelete(event.Payload.After) {
+				document = &models.JobDocument{
+					ID: uint(event.Payload.After["id"].(float64)),
+				}
+
+				break
+			}
 			document, err = s.convertToJobDocument(event)
 			if err != nil {
 				logs.Error(fmt.Sprintf("Error converting job to document: %v", err))
 			}
 		case "organization":
 			logs.Info("Processing organization")
+			if isSoftDelete(event.Payload.After) {
+				document = &models.OrganizationDocument{
+					ID: uint(event.Payload.After["id"].(float64)),
+				}
+
+				break
+			}
 			document, err = s.convertToOrganizationDocument(event)
 			if err != nil {
 				logs.Error(fmt.Sprintf("Error converting organization to document: %v", err))
@@ -81,15 +105,39 @@ func (s *OpenSearchService) ProcessEvent(event models.CDCEvent) error {
 		return errs.NewCannotBeProcessedError("error converting event to document")
 	}
 
+	// -------------------------------
+	// Process the document
+	// -------------------------------
 	switch event.Payload.Op {
 	case "c", "u":
 		switch doc := document.(type) {
 		case *models.EventDocument:
-			return s.opnRepo.CreateOrUpdateEvent(doc)
+			if isSoftDelete(event.Payload.After) {
+				document = &models.OrganizationDocument{
+					ID: uint(event.Payload.After["id"].(float64)),
+				}
+				return s.opnRepo.DeleteEvent(*doc)
+			} else {
+				return s.opnRepo.CreateOrUpdateEvent(doc)
+			}
 		case *models.JobDocument:
-			return s.opnRepo.CreateOrUpdateJob(doc)
+			if isSoftDelete(event.Payload.After) {
+				document = &models.JobDocument{
+					ID: uint(event.Payload.After["id"].(float64)),
+				}
+				return s.opnRepo.DeleteJob(*doc)
+			} else {
+				return s.opnRepo.CreateOrUpdateJob(doc)
+			}
 		case *models.OrganizationDocument:
-			return s.opnRepo.CreateOrUpdateOrganization(doc)
+			if isSoftDelete(event.Payload.After) {
+				document = &models.OrganizationDocument{
+					ID: uint(event.Payload.After["id"].(float64)),
+				}
+				return s.opnRepo.DeleteOrganization(*doc)
+			} else {
+				return s.opnRepo.CreateOrUpdateOrganization(doc)
+			}
 		default:
 			return errs.NewCannotBeProcessedError("unknown document type")
 		}
@@ -107,6 +155,13 @@ func (s *OpenSearchService) ProcessEvent(event models.CDCEvent) error {
 	}
 
 	return nil
+}
+
+func isSoftDelete(after map[string]interface{}) bool {
+	if deletedAt, exists := after["deleted_at"]; exists && deletedAt != nil {
+		return true
+	}
+	return false
 }
 
 func (s *OpenSearchService) convertToEventDocument(event models.CDCEvent) (*models.EventDocument, error) {
