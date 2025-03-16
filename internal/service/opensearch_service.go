@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/DAF-Bridge/cdc-service/errs"
+	"github.com/DAF-Bridge/cdc-service/internal/dto"
 	"github.com/DAF-Bridge/cdc-service/internal/models"
 	"github.com/DAF-Bridge/cdc-service/internal/repository"
 	"github.com/DAF-Bridge/cdc-service/pkg/logs"
@@ -120,9 +121,12 @@ func (s *OpenSearchService) convertToEventDocument(event models.CDCEvent) (*mode
 		return nil, err
 	}
 
-	var categories []string
+	var categories []dto.CategoryRequest
 	for _, category := range eventData.Categories {
-		categories = append(categories, category.Name)
+		categories = append(categories, dto.CategoryRequest{
+			Value: category.ID,
+			Label: category.Name,
+		})
 	}
 
 	eventDoc := &models.EventDocument{
@@ -180,26 +184,41 @@ func (s *OpenSearchService) convertToJobDocument(event models.CDCEvent) (*models
 		return nil, err
 	}
 
-	var categories []string
+	var categories []dto.CategoryRequest
 	for _, category := range jobData.Categories {
-		categories = append(categories, category.Name)
+		categories = append(categories, dto.CategoryRequest{
+			Value: category.ID,
+			Label: category.Name,
+		})
+	}
+
+	var prerequisites []dto.PrerequisiteRequest
+	for _, p := range jobData.Prerequisites {
+		prerequisites = append(prerequisites, dto.PrerequisiteRequest{
+			Title: p.Title,
+			Link:  p.Link,
+		})
 	}
 
 	jobDoc := &models.JobDocument{
-		ID:          uint(id),
-		Title:       event.Payload.After["title"].(string),
-		Description: event.Payload.After["description"].(string),
-		Location:    event.Payload.After["location"].(string),
-		Workplace:   event.Payload.After["workplace"].(string),
-		WorkType:    event.Payload.After["work_type"].(string),
-		CareerStage: event.Payload.After["career_stage"].(string),
-		Salary:      jobData.Salary,
-		Categories:  categories,
+		ID:            uint(id),
+		Title:         event.Payload.After["title"].(string),
+		Prerequisites: prerequisites,
+		Description:   event.Payload.After["description"].(string),
+		Location:      event.Payload.After["location"].(string),
+		Workplace:     event.Payload.After["workplace"].(string),
+		WorkType:      event.Payload.After["work_type"].(string),
+		CareerStage:   event.Payload.After["career_stage"].(string),
+		Salary:        jobData.Salary,
+		Categories:    categories,
 		Organization: models.OrganizationShortDocument{
 			ID:     jobData.Organization.ID,
 			Name:   jobData.Organization.Name,
 			PicUrl: jobData.Organization.PicUrl,
 		},
+		Province: event.Payload.After["province"].(string),
+		Country:  event.Payload.After["country"].(string),
+		UpdateAt: jobData.UpdatedAt.Format("2006-01-02 15:04:05"),
 	}
 
 	return jobDoc, nil
