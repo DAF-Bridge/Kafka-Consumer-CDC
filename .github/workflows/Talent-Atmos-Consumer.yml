@@ -72,7 +72,11 @@ jobs:
           docker buildx build --push \
             --platform linux/amd64,linux/arm64 \
             --tag $IMAGE_NAME:$TAG \
-            --tag $VERSION_TAG .
+            --tag $VERSION_TAG \
+            --push .
+
+          docker buildx imagetools create -t $IMAGE_NAME:amd64 --tag $IMAGE_NAME:$COMMIT_HASH-amd64 $IMAGE_NAME:$COMMIT_HASH
+          docker buildx imagetools create -t $IMAGE_NAME:arm64 --tag $IMAGE_NAME:$COMMIT_HASH-arm64 $IMAGE_NAME:$COMMIT_HASH
 
       - name: Notify on Success
         if: ${{ steps.container_build_push.outcome == 'success' }}
