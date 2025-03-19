@@ -7,7 +7,7 @@ on:
   push:
     branches: ["main", "master"]
   pull_request:
-    branches: ["main", "master"]
+    branches: ["main"]
 
 jobs:
   build:
@@ -69,12 +69,8 @@ jobs:
           VERSION_TAG=$IMAGE_NAME:$COMMIT_HASH
 
           docker buildx create --use
-          docker buildx build --platform linux/amd64 \
-                              -t $IMAGE_NAME:$COMMIT_HASH-amd64 \
-                              --push .
-          
-          docker buildx build --platform linux/arm64 \
-                              -t $IMAGE_NAME:$COMMIT_HASH-arm64 \
+          docker buildx build --platform linux/amd64,linux/arm64 \
+                              -t $IMAGE_NAME:$COMMIT_HASH \
                               --push .
                               
           docker buildx imagetools create -t $IMAGE_NAME:latest \
