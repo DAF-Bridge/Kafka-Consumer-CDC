@@ -73,10 +73,6 @@ jobs:
                               -t $IMAGE_NAME:$COMMIT_HASH \
                               --push .
                               
-          docker buildx imagetools create -t $IMAGE_NAME:latest \
-                                          -t $IMAGE_NAME:$COMMIT_HASH \
-                                          $IMAGE_NAME:$COMMIT_HASH-amd64 \
-                                          $IMAGE_NAME:$COMMIT_HASH-arm64
       - name: Notify on Success
         if: ${{ steps.container_build_push.outcome == 'success' }}
         run: echo "Docker image successfully pushed to GitHub Container Registry"
