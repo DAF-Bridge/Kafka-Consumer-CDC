@@ -184,6 +184,11 @@ func (s *OpenSearchService) convertToEventDocument(event models.CDCEvent) (*mode
 		})
 	}
 
+	endDate := ""
+	if !eventData.EndDate.Time.IsZero() {
+		endDate = eventData.EndDate.Format("2006-01-02")
+	}
+
 	eventDoc := &models.EventDocument{
 		ID:           uint(id),
 		Name:         event.Payload.After["name"].(string),
@@ -192,7 +197,7 @@ func (s *OpenSearchService) convertToEventDocument(event models.CDCEvent) (*mode
 		Latitude:     eventData.Latitude,
 		Longitude:    eventData.Longitude,
 		StartDate:    eventData.StartDate.Format("2006-01-02"),
-		EndDate:      eventData.EndDate.Format("2006-01-02"),
+		EndDate:      endDate,
 		StartTime:    eventData.StartTime.Format("15:04:05"),
 		EndTime:      eventData.EndTime.Format("15:04:05"),
 		LocationName: event.Payload.After["location_name"].(string),
